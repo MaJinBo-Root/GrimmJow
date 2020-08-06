@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+  <link rel="stylesheet" type="text/css" href="./res/static/css/main.css">
+  <link rel="stylesheet" type="text/css" href="./res/layui/css/layui.css">
+  <script type="text/javascript" src="./res/layui/layui.js"></script>
+  <script type="text/javascript" src="/js/jquery-3.3.1.min.js"></script>
+  <script type="text/javascript" src="/js/myJs.js"></script>
+  <script>
+      var orderDirections = "";
+      var orderBys = "";
+      $(function (){
+          initGoodList("0");
+          initTypeListDiv();
+      })
+      function initGoodList(orderBy) {
+          if (orderBy!="0"){
+              if (orderBys==""){
+                  orderBys=orderBy;
+                  orderDirections="ASC";
+              }else{
+                  if (orderBys==orderBy){
+                      orderDirections = (orderDirections=="ASC"?"DESC":"ASC");
+                  }else {
+                      orderBys=orderBy;
+                      orderDirections="ASC";
+                  }
+              }
+          }
+          var url = location.href;
+          console.log(url);
+          var param = {};
+          var paramArr = (url.substring(url.lastIndexOf("?")+1)).split("&");
+          $.each(paramArr,function (i,e) {
+              var paramKey = e.substring(0,e.indexOf("="));
+              param[paramKey]=e.substring(e.indexOf("=")+1);
+          });
+          console.log(orderDirections);
+          param.orderBy = orderBys;
+          param.orderDirection = orderDirections;
+          $.ajax({
+              url:"http://192.168.1.16:8080/good/queryGoodByTypeId",
+              type:"post",
+              dataType:"json",
+              data:param,
+              error:function(e){
+                  alert("失败!");
+                  console.log(e.status);
+                  console.log(e.responseText);
+              },
+              success:function(result){
+                  if(result.status){
+                      console.log(result.message);
+                      console.log(result.goodList);
+                      var goodDivHtml = "";
+                      if (result.goodList.length>0){
+                          $.each(result.goodList,function (i,e) {
+                              goodDivHtml += '<div class="item" onclick="javaScript:location.href=\'details.html?goodId=\'+'+e.goodId+'">';
+                              goodDivHtml += '<div class="img">';
+                              goodDivHtml += '<a href="javascript:;"><img width="240px" height="280px" src="http://192.168.1.16:8080/images/'+e.goodPhotoPath+'"></a>';
+                              goodDivHtml += '</div>';
+                              goodDivHtml += '<div class="text">';
+                              goodDivHtml += '<p class="title">'+e.goodName+'</p>';
+                              goodDivHtml += '<p class="price">';
+                              goodDivHtml += '<span class="pri">'+e.goodPrice+'</span>';
+                              goodDivHtml += '<span class="nub">'+e.goodId+'人付款</span>';
+                              goodDivHtml += '</p></div></div>';
+                          })
+                          $("[name=goodDiv]").html(goodDivHtml);
+                      }
+                  }else if (result.status==false){
+                      alert(result.message);
+                  }
+              }
+          });
+      }
+      function initTypeListDiv() {
+          $.ajax({
+              url:"http://192.168.1.16:8080/type/queryType",
+              type:"post",
+              dataType:"json",
+              error:function(e){
+                  alert("失败!");
+                  console.log(e.status);
+                  console.log(e.responseText);
+              },
+              success:function(result){
+                  if(result.status){
+                      console.log(result.message);
+                      var typeListInJedis = JSON.parse(result.typeListInJedis);
+                      console.log(typeListInJedis);
+                      var typeDivHtml = "";
+                      if (typeListInJedis.length>0){
+                          $.each(typeListInJedis,function (i1,e1) {
+                              if (e1.typeParentId == 7){
+                                  typeDivHtml += '<dl><dt>'+e1.typeName+'</dt>';
+                                  $.each(typeListInJedis,function (i2,e2) {
+                                      if (e1.typeId==e2.typeParentId){
+                                          typeDivHtml += '<dd><a href="commodity.html?typeId='+e2.typeId+'">'+e2.typeName+'</a></dd>';
+                                      }
+                                  })
+                                  typeDivHtml += '</dl>';
+                              }
+                          })
+                          $("#typeListDiv").html(typeDivHtml);
+                      }
+                  }else if (result.status==false){
+                      alert(result.message);
+                  }
+              }
+          });
+      }
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+</head>
+<body>
+  <div class="content content-nav-base commodity-content">
+    <div class="main-nav">
+      <div class="inner-cont0">
+        <div class="inner-cont1 w1200">
+          <div class="inner-cont2">
+            <a href="commodity.html" class="active">所有商品</a>
+            <a href="buytoday.html">今日团购</a>
+            <a href="information.html">母婴资讯</a>
+            <a href="about.html">关于我们</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="commod-cont-wrap">
+      <div class="commod-cont w1200 layui-clear">
+        <div class="left-nav">
+          <div class="title">所有分类</div>
+          <div class="list-box" id="typeListDiv">
+            
+          </div>
+        </div>
+        <div class="right-cont-wrap">
+          <div class="right-cont">
+            <div class="sort layui-clear">
+              <a class="active" href="#" event = 'volume' onclick="initGoodList('goodId')">销量</a>
+              <a href="#" event = 'price' onclick="initGoodList('goodPrice')">价格</a>
+              <a href="#" event = 'newprod' onclick="initGoodList('goodCreateDate')">新品</a>
+              <!--<a href="#" event = 'collection' onclick="orderGood('good',directions)">收藏</a>-->
+            </div>
+            <div class="prod-number">
+              <span>200个</span>
+            </div>
+            <div class="cont-list layui-clear" id="list-cont" name="goodDiv">
+              </div>
+            </div>
+            <!-- 模版引擎导入 -->
+            <!-- <script type="text/html" id="demo">
+              {{# layui.each(d.menu.milk.content,function(index,item){}}    
+                <div class="item">
+                  <div class="img">
+                    <a href="javascript:;"><img src="{{item.img}}"></a>
+                  </div>
+                  <div class="text">
+                    <p class="title"></p>
+                    <p class="price">
+                      <span class="pri">{{item.pri}}</span>
+                      <span class="nub">{{item.nub}}</span>
+                    </p>
+                  </div>
+                </div>
+              {{# }); }}
+            </script> -->
+            <div id="demo0" style="text-align: center;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+<script>
+
+  layui.config({
+    base: './res/static/js/util/' //你存放新模块的目录，注意，不是layui的模块目录
+  }).use(['mm','laypage','jquery'],function(){
+      var laypage = layui.laypage,$ = layui.$,
+     mm = layui.mm;
+       laypage.render({
+        elem: 'demo0'
+        ,count: 100 //数据总数
+      });
+
+
+    // 模版引擎导入
+    //  var html = demo.innerHTML;
+    //  var listCont = document.getElementById('list-cont');
+    //  // console.log(layui.router("#/about.html"))
+    // mm.request({
+    //     url: './json/commodity.json',
+    //     success : function(res){
+    //       console.log(res)
+    //       listCont.innerHTML = mm.renderHtml(html,res)
+    //     },
+    //     error: function(res){
+    //       console.log(res);
+    //     }
+    //   })
+
+    $('.sort a').on('click',function(){
+      $(this).addClass('active').siblings().removeClass('active');
+    })
+    $('.list-box dt').on('click',function(){
+      if($(this).attr('off')){
+        $(this).removeClass('active').siblings('dd').show()
+        $(this).attr('off','')
+      }else{
+        $(this).addClass('active').siblings('dd').hide()
+        $(this).attr('off',true)
+      }
+    })
+
+});
+</script>
+
+
+</body>
+</html>

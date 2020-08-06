@@ -1,0 +1,69 @@
+<html>
+    <meta charset="UTF-8">
+    <head>
+        <title></title>
+        <script type="text/javascript" src="/js/jquery-3.3.1.min.js"></script>
+        <script type="text/javascript" src="/js/qrcode.min.js"></script>
+        <script type="text/javascript" src="/js/myJs.js"></script>
+        <script type="text/javascript">
+            $(function () {
+                initPayCode();
+            })
+
+            var lookTimeOut;
+            function initPayCode() {
+                $.ajax({
+                    url:"http://192.168.1.16:8080/pay/wePay",
+                    type:"post",
+                    data:{"orderId":sessionStorage.getItem("orderId")},
+                    dataType:"json",
+                    error:function(e){
+                        alert("失败!");
+                        console.log(e.status);
+                        console.log(e.responseText);
+                    },
+                    success:function(result){
+                        if(result.status){
+                            console.log(result.message);
+                            new QRCode(document.getElementById("qrcode"),result.data);  // 设置要生成二维码的链接
+                            lookTimeOut = setInterval("lookPayStatus()","5000");
+                        }else if (result.status==false) {
+                            alert(result.message);
+                        }
+                    }
+                });
+            }
+
+            function lookPayStatus() {
+                $.ajax({
+                    url:"http://192.168.1.16:8080/pay/askPayStatus",
+                    type:"post",
+                    data:{"orderId":sessionStorage.getItem("orderId")},
+                    dataType:"json",
+                    error:function(e){
+                        alert("失败!");
+                        console.log(e.status);
+                        console.log(e.responseText);
+                    },
+                    success:function(result){
+                        if(result.status){
+                            //trade_state
+                            console.log(result.message);
+                            if (result.data=="SUCCESS"){
+                                alert("支付成功");
+                                clearInterval(lookTimeOut);
+                                location.href="/myOrder.html";
+                            }
+                        }else if (result.status==false) {
+                            alert(result.message);
+                        }
+                    }
+                });
+            }
+
+        </script>
+    </head>
+    <body>
+        <div id="qrcode"></div>
+    </body>
+</html>

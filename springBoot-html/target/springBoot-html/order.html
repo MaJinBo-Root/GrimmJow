@@ -1,0 +1,492 @@
+<html>
+    <meta charset="UTF-8">
+    <head>
+        <title>order</title>
+        <link rel="stylesheet" type="text/css" href="./res/static/css/main.css">
+        <link rel="stylesheet" type="text/css" href="./res/layui/css/layui.css">
+        <style>
+            #totalMoney {
+                position: relative;
+                top:80px;
+            }
+            #fontDiv {
+                position: relative;
+                top:-190px;
+                left:1020px;
+            }
+        </style>
+        <script type="text/javascript" src="./res/layui/layui.js"></script>
+        <script type="text/javascript" src="/js/jquery-3.3.1.min.js"></script>
+        <script type="text/javascript" src="/js/myJs.js"></script>
+        <!-- 引入datatables表格插件的css文件和js文件 -->
+        <link href="/js/DataTables/css/dataTables.bootstrap.min.css" rel="stylesheet" />
+        <script src="/js/DataTables/js/jquery.dataTables.min.js"></script>
+        <script src="/js/DataTables/js/dataTables.bootstrap.min.js"></script>
+        <script>
+            $(function () {
+                initGoodTable();
+                initAddressTable();
+                $("#addressTable_length").css("display","none");
+                $("#addressTable_info").css("display","none");
+                $("#addressTable_paginate").css("display","none");
+            })
+            var chineseLanguage = {
+                "sProcessing": "处理中...",
+                "sLengthMenu": "显示 _MENU_ 项结果",
+                "sZeroRecords": "没有匹配结果",
+                "sInfo": "显示第 _START_ 至 _END_ 项结果，共 _TOTAL_ 项",
+                "sInfoEmpty": "显示第 0 至 0 项结果，共 0 项",
+                "sInfoFiltered": "(由 _MAX_ 项结果过滤)",
+                "sInfoPostFix": "",
+                "sSearch": "搜索:",
+                "sUrl": "",
+                "sEmptyTable": "表中数据为空",
+                "sLoadingRecords": "载入中...",
+                "sInfoThousands": ",",
+                "oPaginate": {
+                    "sFirst": "首页",
+                    "sPrevious": "上页",
+                    "sNext": "下页",
+                    "sLast": "末页"
+                },
+                "oAria": {
+                    "sSortAscending": ": 以升序排列此列",
+                    "sSortDescending": ": 以降序排列此列"
+                }
+            };
+            var addressTable;
+            function addressTableSearch(){
+                addressTable.ajax.reload();
+            }
+            function initAddressTable() {
+                addressTable = $("#addressTable").DataTable({
+                    serverSide:false,
+                    processing:true,
+                    language:chineseLanguage,
+                    searching:false,
+                    ordering:false,
+                    ajax:({
+                        url:"http://192.168.1.16:8080/address/queryAddressByVipId",
+                        type:"post",
+                        async:false,
+                        dataSrc:"data"
+                    }),
+                    columns:[
+                        { data:"addressId",
+                            render:function(data,type,row){
+                                if (row.addressDefaultStatus==0){
+                                    return "<input type='radio' checked name='addressId' lay-skin='primary' value='"+data+"'/>";
+                                }else{
+                                    return "<input type='radio' name='addressId' lay-skin='primary' value='"+data+"'/>";
+                                }
+                            }
+                        },
+                        {data:"addressSimpleName"},
+                        {data:"vipName"},
+                        {data:"addressDetailName"},
+                        {data:"vipPhoneNumber"},
+                        {data:"addressCreateDate"},
+                        { data:"addressId",
+                            render:function(data,type,row){
+                                var buttonHtml = '';
+                                buttonHtml += '<div class="layui-btn-group">';
+                                buttonHtml += '<button name="deleteAddressButton" addressId="del'+data+'" type="button" class="layui-btn layui-btn-sm" class="layui-btn">删除</button><button name="defaultAddressButton" addressId="def'+data+'" type="button" class="layui-btn layui-btn-sm" class="layui-btn">置为默认</button>';
+                                buttonHtml == '</div>';
+                                return buttonHtml;
+                            }
+                        }
+                    ]
+                });
+            }
+            layui.use(['layer','form','element'],function () {
+                var layer = layui.layer;
+                var form = layui.form;
+                $("#insertAddress").click(function () {
+                    $.ajax({
+                        url:"http://192.168.1.16:8080/area/queryAreaByAreaParentId",
+                        type:"post",
+                        data:{"areaParentId":20},
+                        dataType:"json",
+                        error:function(e){
+                            layer.alert("失败!");
+                            console.log(e.status);
+                            console.log(e.responseText);
+                        },
+                        success:function(result){
+                            if(result.status){
+                                console.log(result.message);
+                                var areaList = result.data;
+                                var areaHtml = '<option value="">请选择</option>';
+                                if (areaList.length>0){
+                                    $.each(areaList,function (i,e) {
+                                        areaHtml += '<option value='+e.areaId+'>'+e.areaName+'</option>';
+                                    });
+                                    $("#insertAddressForm #areaGrandId").html(areaHtml);
+                                    form.render('select');
+                                }
+                            }else if (result.status==false) {
+                                layer.alert(result.message);
+                            }
+                        }
+                    });
+                    layer.open({
+                        type:1,
+                        title:'编辑新地址',
+                        area:['800px','380px'],
+                        content:$("#insertAddressDiv")
+                    });
+                })
+
+                $("#cancelInsertAddress").click(function () {
+                    layer.closeAll();
+                })
+
+                form.on('select(areaGrandId)',function(data){
+                    if (data.value==""){
+                        $("#insertAddressForm #areaParentId").html('<option value="">请选择</option>');
+                        $("#insertAddressForm #areaId").html('<option value="">请选择</option>');
+                        form.render('select');
+                        return;
+                    }
+                    $.ajax({
+                        url:"http://192.168.1.16:8080/area/queryAreaByAreaParentId",
+                        type:"post",
+                        data:{"areaParentId":data.value},
+                        dataType:"json",
+                        error:function(e){
+                            layer.alert("失败!");
+                            console.log(e.status);
+                            console.log(e.responseText);
+                        },
+                        success:function(result){
+                            if(result.status){
+                                console.log(result.message);
+                                var areaList = result.data;
+                                var areaHtml = "<option value=''>请选择</option>";
+                                if (areaList.length>0){
+                                    $.each(areaList,function (i,e) {
+                                        areaHtml += '<option value='+e.areaId+'>'+e.areaName+'</option>';
+                                    })
+                                    $("#insertAddressForm #areaParentId").html(areaHtml);
+                                    form.render('select');
+                                }
+                            }else if (result.status==false) {
+                                layer.layer.alert(result.message);
+                            }
+                        }
+                    });
+                });
+
+                form.on('select(areaParentId)',function(data){
+                    if (data.value==""){
+                        $("#insertAddressForm #areaGrandId").html('<option value="">请选择</option>');
+                        form.render('select');
+                        return;
+                    }
+                    $.ajax({
+                        url:"http://192.168.1.16:8080/area/queryAreaByAreaParentId",
+                        type:"post",
+                        data:{"areaParentId":data.value},
+                        dataType:"json",
+                        error:function(e){
+                            layer.alert("失败!");
+                            console.log(e.status);
+                            console.log(e.responseText);
+                        },
+                        success:function(result){
+                            if(result.status){
+                                console.log(result.message);
+                                var areaList = result.data;
+                                var areaHtml = "<option value=''>请选择</option>";
+                                if (areaList.length>0){
+                                    $.each(areaList,function (i,e) {
+                                        areaHtml += '<option value='+e.areaId+'>'+e.areaName+'</option>';
+                                    })
+                                    $("#insertAddressForm #areaId").html(areaHtml);
+                                    form.render('select');
+                                }
+                            }else if (result.status==false) {
+                                layer.alert(result.message);
+                            }
+                        }
+                    });
+                });
+
+                form.verify({
+                    addressDetailName: function (value,item) {//item   dom对象
+                        if (value.length < 6) {
+                            return '详细地址至少得6个字符';
+                        }
+                    }
+                });
+
+                form.on('submit(insertAddressSubmit)',function (data) {
+                    console.log(data.field);
+                    $.ajax({
+                        url:"http://192.168.1.16:8080/address/insertAddress",
+                        type:"post",
+                        data:data.field,
+                        dataType:"json",
+                        error:function(e){
+                            layer.alert("失败!");
+                            console.log(e.status);
+                            console.log(e.responseText);
+                        },
+                        success:function(result){
+                            if(result.status){
+                                console.log(result.message);
+                                addressTableSearch();
+                                form.render();
+                                layer.msg(result.message);
+                            }else if (result.status==false) {
+                                layer.alert(result.message);
+                            }
+                        }
+                    });
+                    $("#insertAddressForm")[0].reset();
+                    layer.closeAll();
+                    return false;
+                })
+
+                form.on('submit(insertOrderSubmit)',function (data) {
+                    data.field.toke = new Date().getTime();
+                    $.ajax({
+                        url:"http://192.168.1.16:8080/order/insertOrder",
+                        type:"post",
+                        data:data.field,
+                        dataType:"json",
+                        error:function(e){
+                            layer.alert("失败!");
+                            console.log(e.status);
+                            console.log(e.responseText);
+                        },
+                        success:function(result){
+                            if(result.status){
+                                console.log(result.message);
+                                layer.msg(result.message);
+                                sessionStorage.setItem("orderId",result.orderId);
+                                location.href="/paying.html";
+                            }else if (result.status==false) {
+                                layer.alert(result.message);
+                            }
+                        }
+                    });
+                    return false;
+                })
+                $("body").on('click','[name=defaultAddressButton]',function () {
+                    var addressId = ($(this).attr("addressId")).substr(($(this).attr("addressId")).indexOf("f")+1);
+                    $.ajax({
+                        url:"http://192.168.1.16:8080/address/defaultAddress",
+                        type:"post",
+                        data:{"addressId":addressId},
+                        dataType:"json",
+                        error:function(e){
+                            layer.alert("失败!");
+                            console.log(e.status);
+                            console.log(e.responseText);
+                        },
+                        success:function(result){
+                            if(result.status){
+                                layer.msg(result.message);
+                                console.log(result.message);
+                                addressTableSearch();
+                                form.render();
+                            }else if (result.status==false) {
+                                layer.alert(result.message);
+                            }
+                        }
+                    });
+                })
+
+                $("body").on('click','[name=deleteAddressButton]',function () {
+                    var addressId = ($(this).attr("addressId")).substr(($(this).attr("addressId")).indexOf("l")+1);
+                    $.ajax({
+                        url:"http://192.168.1.16:8080/address/deleteAddress",
+                        type:"post",
+                        data:{"addressId":addressId},
+                        dataType:"json",
+                        error:function(e){
+                            layer.alert("失败!");
+                            console.log(e.status);
+                            console.log(e.responseText);
+                        },
+                        success:function(result){
+                            if(result.status){
+                                console.log(result.message);
+                                addressTableSearch();
+                                form.render();
+                                layer.msg(result.message);
+                            }else if (result.status==false) {
+                                layer.alert(result.message);
+                            }
+                        }
+                    });
+                })
+
+            })
+
+            function initGoodTable() {
+                var shoppingCartIdArr = location.href.substring(location.href.indexOf("=")+1,(location.href).indexOf("&")).split(",");
+                $.ajax({
+                    url:"http://192.168.1.16:8080/shoppingCart/queryShoppingCartByShoppingCartIdList",
+                    type:"post",
+                    data:{"shoppingCartIdArr":shoppingCartIdArr},
+                    dataType:"json",
+                    error:function(e){
+                        alert("失败!");
+                        console.log(e.status);
+                        console.log(e.responseText);
+                    },
+                    success:function(result){
+                        if(result.status){
+                            console.log(result.message);
+                            var goodList = result.data;
+                            var tableBodyHtml = "";
+                            if(goodList.length>0){
+                                $.each(goodList,function (i,e) {
+                                    tableBodyHtml += '<tr>';
+                                        tableBodyHtml += '<td width="100px">';
+                                            tableBodyHtml += '<img height="30px" src="http://192.168.1.16:8080/images/'+e.shoppingCartPhoto+'"/>';
+                                        tableBodyHtml += '</td>';
+                                        tableBodyHtml += '<td>';
+                                            tableBodyHtml += e.shoppingCartPrice;
+                                        tableBodyHtml += '</td>';
+                                        tableBodyHtml += '<td>';
+                                            tableBodyHtml += e.shoppingCartCount;
+                                        tableBodyHtml += '</td>';
+                                        tableBodyHtml += '<td>';
+                                            tableBodyHtml += e.shoppingCartSumPrice;
+                                        tableBodyHtml += '</td>'
+                                    tableBodyHtml += '</tr>';
+                                })
+                            }
+                            $("#goodTableBody").append(tableBodyHtml);
+                            $("#totalMoney").html("￥"+(location.href).substring(location.href.lastIndexOf("=")+1));
+                        }else if (result.status==false) {
+                            alert(result.message);
+                        }
+                    }
+                });
+            }
+        </script>
+    </head>
+    <body>
+        <div class="layui-form">
+            <div class="layui-collapse">
+                <div class="layui-colla-item">
+                    <h2 class="layui-colla-title">确认收货地址</h2>
+                    <div class="layui-colla-content layui-show">
+                        <table id="addressTable" class="layui-table">
+                            <thead>
+                                <tr>
+                                    <td>选择</td>
+                                    <td>地址</td>
+                                    <td>收件人</td>
+                                    <td>详细地址</td>
+                                    <td>电话</td>
+                                    <td>创建时间</td>
+                                    <td>操作</td>
+                                </tr>
+                            </thead>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="7" align="center">
+                                        <input value="增加地址" id="insertAddress" type="button" class="layui-btn layui-btn-sm" class="layui-btn">
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+                <div class="layui-colla-item">
+                    <h2 class="layui-colla-title">确认支付方式</h2>
+                    <div class="layui-colla-content layui-show">
+                        <div class="layui-form-item">
+                            <center>
+                                <input type="radio" lay-skin="primary" title="货到支付" lay-verify="required|orderPayType" name="orderPayType" value="1">
+                                <input type="radio" lay-skin="primary" title="在线支付" lay-verify="required|orderPayType" name="orderPayType" value="0">
+                            </center>
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-colla-item ">
+                    <h2 class="layui-colla-title">确认订单信息</h2>
+                    <div class="layui-colla-content layui-show layui-col-md4">
+                        <table style="width:1000px" class="layui-table">
+                            <thead>
+                                <tr>
+                                    <td>店铺宝贝</td>
+                                    <td>单价(￥)</td>
+                                    <td>数量</td>
+                                    <td>小计(￥)</td>
+                                </tr>
+                            </thead>
+                            <tbody id="goodTableBody"></tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="4" align="right">
+                                        <input value="返回购物车" type="button" id="insertOrder" onclick="javaScript:location.href='/shopcart.html'" class="layui-btn layui-btn-sm" class="layui-btn-warm">
+                                        <input value="提交订单" lay-filter="insertOrderSubmit" type="submit" lay-submit class="layui-btn layui-btn-sm" class="layui-btn-primary">
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                        <div class="layui-col-md8 layui-bg-red" id="fontDiv" style="height:180px;width:300px;">
+                            <center>
+                                <b>
+                                    <font size="4" style="color:greenyellow;font-family:宋体"><span id="totalMoney"></span></font>
+                                </b>
+                            </center>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="insertAddressDiv" style="display:none;">
+            <div style="height:20px;"></div>
+            <form class="layui-form" id="insertAddressForm">
+                <div class="layui-form-item">
+                    <label class="layui-form-label">地区：</label>
+                    <div class="layui-input-block layui-col-md8">
+                        <div class="layui-col-md2">
+                            <select lay-verify="required" class="layui-select-group" lay-filter="areaGrandId" id="areaGrandId" name="areaGrandId">
+                                <option value="">请选择</option>
+                            </select>
+                        </div>
+                        <div class="layui-col-md2">
+                            <select lay-verify="required" class="layui-form-select" lay-filter="areaParentId" id="areaParentId" name="areaParentId">
+                                <option value="">请选择</option>
+                            </select>
+                        </div>
+                        <div class="layui-col-md2">
+                            <select lay-verify="required" class="layui-select" id="areaId" name="areaId">
+                                <option value="">请选择</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">默认：</label>
+                    <div class="layui-input-block layui-col-md7">
+                        <input type='radio' lay-verify="required" name='addressDefaultStatus' value="0" title="是" lay-skin='primary'/>
+                        <input type='radio' lay-verify="required" name='addressDefaultStatus' value="1" title="否" lay-skin='primary'/>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">地址：</label>
+                    <div class="layui-input-block layui-col-md6">
+                        <textarea id="addressDetailName" name="addressDetailName" lay-verify="required|addressDetailName" placeholder="请您尽量填写详细地址，谢谢配合" class="layui-textarea"></textarea>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">OK：</label>
+                    <div class="layui-input-block layui-col-md6">
+                        <input type="submit" lay-filter="insertAddressSubmit" lay-submit value="添加" class="layui-btn layui-btn-normal"/>
+                        <input type="button" id="cancelInsertAddress" value="取消" class="layui-btn layui-btn-primary"/>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </body>
+
+</html>

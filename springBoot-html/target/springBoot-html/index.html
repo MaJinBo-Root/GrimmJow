@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <title>Document</title>
+      <link rel="stylesheet" type="text/css" href="./res/static/css/main.css">
+      <link rel="stylesheet" type="text/css" href="./res/layui/css/layui.css">
+      <script type="text/javascript" src="./res/layui/layui.js"></script>
+      <script type="text/javascript" src="/js/jquery-3.3.1.min.js"></script>
+      <script type="text/javascript" src="/js/myJs.js"></script>
+      <script type="text/javascript">
+          $(function () {
+              initTypeList();
+              initgoodsList();
+          })
+          //初始化分类数据
+          function initTypeList() {
+              $.post({
+                  url:"http://192.168.1.16:8080/type/queryType",
+                  dataType:"json",
+                  error:function(e){
+                      alert("失败!");
+                      console.log(e.status);
+                      console.log(e.responseText);
+                  },
+                  success:function(result){
+                      if(result.status){
+                          console.log(result.message);
+                          var typeDivHtml = "";
+                          var typeListInJedis = result.data;
+                          console.log(typeListInJedis);
+                          if(typeListInJedis.length>0){
+                              $.each(typeListInJedis,function (i,e) {
+                                  if (e.typeId!=1){
+                                      if (typeListInJedis[i].typeParentId==7){
+                                          typeDivHtml += '<li class="nav-item">';
+                                          typeDivHtml += '<div class="title">'+e.typeName+'</div><p>';
+                                          for (var j = 0; j < typeListInJedis.length; j++) {
+                                              if (e.typeId == typeListInJedis[j].typeParentId){
+                                                  typeDivHtml += '<a href="javaScript:void(0)" onclick="javaScript:location.href=\'commodity.html?typeId=\'+'+typeListInJedis[j].typeId+';">'+typeListInJedis[j].typeName+'</a>';
+                                              }
+                                          }
+                                          typeDivHtml += '</p><i class="layui-icon layui-icon-right"></i>';
+                                          typeDivHtml += '</li>';
+                                      }
+                                  }
+                              })
+                              $("#typeDiv").html(typeDivHtml);
+                          }
+                      }else if (result.status==false){
+                          alert(result.message);
+                      }
+                  }
+              });
+          }
+          function initgoodsList() {
+              $.ajax({
+                  url:"http://192.168.1.16:8080/goods/queryGoodsByGoodsHeat",
+                  type:"post",
+                  data:{"goodsHeat":0},
+                  dataType:"json",
+                  error:function(e){
+                      alert("失败!");
+                      console.log(e.status);
+                      console.log(e.responseText);
+                  },
+                  success:function(result){
+                      if(result.status){
+                          console.log(result.message);
+                          console.log(result.data);
+                          var goodsDivHtml = "";
+                          if (result.data.length>0){
+                              $.each(result.data,function (i,e) {
+                                  goodsDivHtml += '<div class="list-item">'
+                                  goodsDivHtml += '<a href="/details.html?goodsId='+e.goodsId+'"><img width="160px" height="160px" src="http://192.168.1.16:8080/images/'+e.goodsPhotoPath+'"></a>';
+                                  goodsDivHtml += '<p>'+e.goodsName+'</p>';
+                                  goodsDivHtml += '<span>'+e.goodsPrice+'</span>';
+                                  goodsDivHtml += '</div>';
+                              })
+                              $("#goodsListDiv").html(goodsDivHtml);
+                          }
+                      }else if (result.status==false){
+                          alert(result.message);
+                      }
+                  }
+              });
+          }
+      </script>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+      <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+    </head>
+    <body id="list-cont">
+        <div class="site-nav-bg">
+            <div class="site-nav w1200">
+                <p class="sn-back-home">
+                    <i class="layui-icon layui-icon-home"></i>
+                    <a href="#">首页</a>
+                </p>
+                <div class="sn-quick-menu">
+                    <div class="login"><a href="myOrder.html">我的订单</a></div>
+                    <div class="login"><a href="login.html">登录</a></div>
+                    <div class="sp-cart"><a href="shopcart.html">购物车</a><span id="typeCount"></span></div>
+                </div>
+            </div>
+        </div>
+        <div class="header">
+            <div class="headerLayout w1200">
+                <div class="headerCon">
+                    <h1 class="mallLogo">
+                        <a href="#" title="母婴商城">
+                            <img src="./res/static/img/logo.png">
+                        </a>
+                    </h1>
+                    <div class="mallSearch">
+                        <form action="" class="layui-form" novalidate>
+                            <input type="text" name="title" required  lay-verify="required" autocomplete="off" class="layui-input" placeholder="请输入需要的商品">
+                            <button class="layui-btn" lay-submit lay-filter="formDemo">
+                                <i class="layui-icon layui-icon-search"></i>
+                            </button>
+                            <input type="hidden" name="" value="">
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+      <div class="content">
+          <div class="main-nav">
+              <div class="inner-cont0">
+                  <div class="inner-cont1 w1200">
+                      <div class="inner-cont2">
+                          <a href="commodity.html" class="active">所有商品</a>
+                          <a href="buytoday.html">今日团购</a>
+                          <a href="information.html">母婴资讯</a>
+                          <a href="about.html">关于我们</a>
+                      </div>
+                  </div>
+              </div>
+          </div>
+        <div class="category-con">
+          <div class="category-inner-con w1200">
+            <div class="category-type">
+              <h3>全部分类</h3>
+            </div>
+            <div class="category-tab-content">
+              <div class="nav-con">
+                <ul id="typeDiv" class="normal-nav layui-clear">
+                </ul>
+              </div>
+            </div>
+          </div>
+          <div class="category-banner">
+            <div class="w1200">
+              <img src="./res/static/img/banner1.jpg">
+            </div>
+          </div>
+        </div>
+        <div class="product-list-box" id="product-list-box">
+          <div class="product-list-cont w1200">
+            <h4>热销推荐</h4>
+            <div id="goodsListDiv" class="product-item-box layui-clear">
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="footer">
+        <div class="ng-promise-box">
+          <div class="ng-promise w1200">
+            <p class="text">
+              <a class="icon1" href="javascript:;">7天无理由退换货</a>
+              <a class="icon2" href="javascript:;">满99元全场免邮</a>
+              <a class="icon3" style="margin-right: 0" href="javascript:;">100%品质保证</a>
+            </p>
+          </div>
+        </div>
+        <div class="mod_help w1200">
+          <p>
+            <a href="javascript:;">关于我们</a>
+            <span>|</span>
+            <a href="javascript:;">帮助中心</a>
+            <span>|</span>
+            <a href="javascript:;">售后服务</a>
+            <span>|</span>
+            <a href="javascript:;">母婴资讯</a>
+            <span>|</span>
+            <a href="javascript:;">关于货源</a>
+          </p>
+          <p class="coty">母婴商城版权所有 &copy; 2012-2020</p>
+        </div>
+      </div>
+    </body>
+</html>

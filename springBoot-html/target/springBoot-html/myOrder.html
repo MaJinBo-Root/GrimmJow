@@ -1,0 +1,182 @@
+<html>
+    <meta charset="UTF-8">
+    <head>
+        <title>我的订单</title>
+        <link rel="stylesheet" type="text/css" href="./res/static/css/main.css">
+        <link rel="stylesheet" type="text/css" href="./res/layui/css/layui.css">
+        <script type="text/javascript" src="./res/layui/layui.js"></script>
+        <script type="text/javascript" src="/js/jquery-3.3.1.min.js"></script>
+        <script type="text/javascript" src="/js/myJs.js"></script>
+        <script>
+            layui.use(['form','element','table'],function () {
+                var form = layui.form;
+                var table = layui.table;
+                var layer = layui.layer;
+                $.ajax({
+                    url:"http://192.168.1.16:8080/order/queryOrderByVipId",
+                    type:"post",
+                    dataType:"json",
+                    error:function(e){
+                        layer.alert("失败!");
+                        console.log(e.status);
+                        console.log(e.responseText);
+                    },
+                    success:function(result){
+                        if(result.status){
+                            console.log(result.message);
+                            layer.msg(result.message);
+                            var orderList = result.data;
+                            var orderTableHtml = "";
+                            if (orderList.length>0){
+                                $.each(orderList,function (i,e) {
+                                    orderTableHtml += '<tr>';
+                                        orderTableHtml += '<td>'+e.orderId+'</td>';
+                                        orderTableHtml += '<td>'+e.addressDetailName+'</td>';
+                                        if (e.orderPayStatus==1){
+                                            orderTableHtml += '<td>未支付😥</td>';
+                                        } else{
+                                            orderTableHtml += '<td class="layui-bg-gray">已支付😄</td>';
+                                        }
+                                        if (e.orderPayType==1){
+                                            orderTableHtml += '<td>货到支付</td>';
+                                        } else{
+                                            orderTableHtml += '<td>微信支付</td>';
+                                        }
+                                        orderTableHtml += '<td>'+e.orderCreateDate+'</td>';
+                                        orderTableHtml += '<td>'+e.orderTotalMoney+'</td>';
+                                        orderTableHtml += '<td>'+e.orderTotalGoodType+'</td>';
+                                        orderTableHtml += '<td>'+e.vipName+'</td>';
+                                        if (e.orderPayStatus==1){
+                                            orderTableHtml += '<td><input type="button" orderId="orderId'+e.orderId+'" class="layui-btn layui-btn-xs" value="查看详情" name="lookOrderDetail"/><input type="button" deleteOrderId="orderId'+e.orderId+'" class="layui-btn layui-btn-xs" value="删除" name="deleteOrderButton"/><input type="button" payOrderId="orderId'+e.orderId+'" class="layui-btn layui-btn-xs" value="支付" name="payOrderButton"/></td>';
+                                        }else{
+                                            orderTableHtml += '<td><input type="button" orderId="orderId'+e.orderId+'" class="layui-btn layui-btn-xs" value="查看详情" name="lookOrderDetail"/><input type="button" deleteOrderId="orderId'+e.orderId+'" class="layui-btn layui-btn-xs" value="删除" name="deleteOrderButton"/><input type="button" payOrderId="orderId'+e.orderId+'" class="layui-btn layui-btn-xs" disabled="true" value="已付" name="payOrderButton"/></td>';
+                                        }
+                                    orderTableHtml += '</tr>';
+                                })
+                                $("#orderTableBody").append(orderTableHtml);
+                            }
+                        }else if (result.status==false){
+                            layer.alert(result.message);
+                        }
+                    }
+                });
+                $('body').on('click','[name=lookOrderDetail]',function () {
+                    var orderId = ($(this).attr("orderId")).substring(($(this).attr("orderId")).lastIndexOf("d")+1);
+                    $.ajax({
+                        url:"http://192.168.1.16:8080/orderDetail/queryOrderDetailByOrderId",
+                        type:"post",
+                        data:{"orderId":orderId},
+                        dataType:"json",
+                        error:function(e){
+                            layer.alert("失败!");
+                            console.log(e.status);
+                            console.log(e.responseText);
+                        },
+                        success:function(result){
+                            if(result.status){
+                                console.log(result.message);
+                                layer.msg(result.message);
+                                var orderDetailList = result.data;
+                                var orderDetailTableHtml = "";
+                                if (orderDetailList.length>0){
+                                    $.each(orderDetailList,function (i,e) {
+                                        orderDetailTableHtml += '<tr absha="a"><td><img width="30px" src="http://localhost:8080/images/'+e.goodPhotoPath+'"></td>';
+                                        orderDetailTableHtml += '<td>'+e.goodsName+'</td>';
+                                        orderDetailTableHtml += '<td>'+e.goodsPrice+'</td>';
+                                        orderDetailTableHtml += '<td>'+e.goodsCount+'</td>';
+                                        orderDetailTableHtml += '<td>'+e.areaFullName+'</td></tr>';
+                                    })
+                                    $("#orderDetailBody").html(orderDetailTableHtml);
+                                }
+                            }else if (result.status==false) {
+                                layer.alert(result.message);
+                            }
+                        }
+                    });
+                    layer.open({
+                        type:1,
+                        title:"订单详情",
+                        area:['800px','300px'],
+                        content:$("#orderDetailDiv"),
+                        btn:['我知道了'],
+                        iSee:function iSee() {
+
+                        }
+                    })
+                })
+
+                $('body').on('click','[name=deleteOrderButton]',function () {
+                    var orderIdArr = [];
+                    var orderId = ($(this).attr("deleteOrderId")).substring(($(this).attr("deleteOrderId")).lastIndexOf("d")+1);
+                    orderIdArr.push(orderId);
+                    $.ajax({
+                        url:"http://192.168.1.16:8080/order/fictitiouslyDeleteOrder",
+                        type:"post",
+                        data:{"orderIdArr":orderIdArr},
+                        dataType:"json",
+                        error:function(e){
+                            layer.alert("失败!");
+                            console.log(e.status);
+                            console.log(e.responseText);
+                        },
+                        success:function(result){
+                            if(result.status){
+                                console.log(result.message);
+                                layer.msg(result.message);
+                                history.go(0);
+                            }else if (result.status==false) {
+                                layer.alert(result.message);
+                            }
+                        }
+                    });
+                })
+
+                $('body').on('click','[name=payOrderButton]',function () {
+                    var orderId = ($(this).attr("payOrderId")).substring(($(this).attr("payOrderId")).lastIndexOf("d")+1);
+                    sessionStorage.setItem("orderId",orderId);
+                    location.href="/paying.html";
+                })
+
+            })
+        </script>
+    </head>
+    <body>
+        <div class="layui-collapse">
+            <div class="layui-colla-item">
+                <h2 class="layui-colla-title">我的订单</h2>
+                <div class="layui-colla-content layui-show">
+                    <table id="orderTable" class="layui-table">
+                        <thead>
+                            <tr>
+                                <td>订单ID</td>
+                                <td>地址</td>
+                                <td>支付状态</td>
+                                <td>支付方式</td>
+                                <td>下单时间</td>
+                                <td>总价（￥）</td>
+                                <td>商品数量</td>
+                                <td>订单人</td>
+                                <td>订单详情</td>
+                            </tr>
+                        </thead>
+                        <tbody id="orderTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="layui-bg-gray" id="orderDetailDiv" style="display:none;">
+            <table class="layui-table">
+                <thead>
+                    <tr>
+                        <td>图片</td>
+                        <td>商品名</td>
+                        <td>商品单价</td>
+                        <td>商品数量</td>
+                        <td>生产地</td>
+                    </tr>
+                </thead>
+                <tbody id="orderDetailBody"></tbody>
+            </table>
+        </div>
+    </body>
+</html>
